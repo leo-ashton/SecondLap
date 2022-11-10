@@ -19,7 +19,7 @@ acc = [0.0] * 3
 gyro = [0.0] * 3
 Angle = [0.0] * 3
 mag = [0.0] * 3
-eulerAngle = [0.0]*3
+eulerAngle = [0.0] * 3
 # 存放的经纬度列表
 lon = []
 lat = []
@@ -56,7 +56,7 @@ def DueData(inputdata):  # 新增的核心程序，对读取的数据进行划�
                 CheckSum += data
                 Bytenum += 1
             else:
-                if data == (CheckSum & 0xff):  # 假如校验位正确
+                if data == (CheckSum & 0xFF):  # 假如校验位正确
                     acc = get_acc(ACCData)
                 CheckSum = 0  # 各数据归零，进行新的循环判断
                 Bytenum = 0
@@ -67,7 +67,7 @@ def DueData(inputdata):  # 新增的核心程序，对读取的数据进行划�
                 CheckSum += data
                 Bytenum += 1
             else:
-                if data == (CheckSum & 0xff):
+                if data == (CheckSum & 0xFF):
                     gyro = get_angle(AngleData)
                 CheckSum = 0
                 Bytenum = 0
@@ -78,11 +78,13 @@ def DueData(inputdata):  # 新增的核心程序，对读取的数据进行划�
                 CheckSum += data
                 Bytenum += 1
             else:
-                if data == (CheckSum & 0xff):
+                if data == (CheckSum & 0xFF):
                     get_lonlat(Lonlatdata)
                 CheckSum = 0
                 Bytenum = 0
                 FrameState = 0
+
+
 # 加速度
 
 
@@ -107,6 +109,7 @@ def get_acc(datahex):
 
     return acc_x, acc_y, acc_z
 
+
 # 角加速度
 
 
@@ -129,6 +132,7 @@ def get_gyro(datahex):
     if gyro_z >= k_gyro:
         gyro_z -= 2 * k_gyro
     return gyro_x, gyro_y, gyro_z
+
 
 # 角度
 
@@ -154,6 +158,7 @@ def get_angle(datahex):
 
     return angle_x, angle_y, angle_z
 
+
 # 磁力计
 
 
@@ -165,9 +170,9 @@ def get_mag(datahex):
     hzl = datahex[4]
     hzh = datahex[5]
 
-    mag_x = (hxh << 8 | hxl)
-    mag_y = (hyh << 8 | hyl)
-    mag_z = (hzh << 8 | hzl)
+    mag_x = hxh << 8 | hxl
+    mag_y = hyh << 8 | hyl
+    mag_z = hzh << 8 | hzl
     if (65565 - mag_x) < mag_x:
         mag_x -= 65535
     if (65565 - mag_y) < mag_y:
@@ -175,6 +180,7 @@ def get_mag(datahex):
     if (65565 - mag_z) < mag_z:
         mag_z -= 65535
     return mag_x, mag_y, mag_z
+
 
 # 经纬度
 
@@ -216,46 +222,55 @@ def IMU_AHRSupdate_withMagnetic(acc, gyro, mag):
     global Q_info, I_ex, I_ey, I_ez
     global icm_ki, icm_kp, delta_T
 
-    norm = math.sqrt(acc[0]*acc[0] + acc[1]*acc[1] + acc[2]*acc[2])
+    norm = math.sqrt(acc[0] * acc[0] + acc[1] * acc[1] + acc[2] * acc[2])
     ax = acc[0] / norm
     ay = acc[1] / norm
     az = acc[2] / norm
 
-    norm = math.sqrt(gyro[0]*gyro[0] + gyro[1]*gyro[1] + gyro[2]*gyro[2])
+    norm = math.sqrt(gyro[0] * gyro[0] + gyro[1] * gyro[1] + gyro[2] * gyro[2])
     gx = gyro[0] / norm
     gy = gyro[1] / norm
     gz = gyro[2] / norm
 
-    norm = math.sqrt(mag[0]*mag[0] + mag[1]*mag[1] + mag[2]*mag[2])
+    norm = math.sqrt(mag[0] * mag[0] + mag[1] * mag[1] + mag[2] * mag[2])
     mx = mag[0] / norm
     my = mag[1] / norm
     mz = mag[2] / norm
 
     q0, q1, q2, q3 = (Q_info[0], Q_info[1], Q_info[2], Q_info[3])
 
-    hx = 2 * mx * (0.5 - q2*q2 - q3*q3) + 2*my * \
-        (q1*q2 - q0*q3) + 2*mz*(q1*q3 + q0*q2)
-    hy = 2 * mx * (q1*q2 + q0*q3) + 2 * my * (0.5 - q1 *
-                                              q1 - q3*q3) + 2 * mz * (q2*q3 - q0*q1)
-    hz = 2 * mx * (q1*q3 - q0*q2) + 2 * my * (q2*q3 + q0*q1) + \
-        2 * mz * (0.5 - q1*q1 - q2*q2)
+    hx = (
+        2 * mx * (0.5 - q2 * q2 - q3 * q3)
+        + 2 * my * (q1 * q2 - q0 * q3)
+        + 2 * mz * (q1 * q3 + q0 * q2)
+    )
+    hy = (
+        2 * mx * (q1 * q2 + q0 * q3)
+        + 2 * my * (0.5 - q1 * q1 - q3 * q3)
+        + 2 * mz * (q2 * q3 - q0 * q1)
+    )
+    hz = (
+        2 * mx * (q1 * q3 - q0 * q2)
+        + 2 * my * (q2 * q3 + q0 * q1)
+        + 2 * mz * (0.5 - q1 * q1 - q2 * q2)
+    )
 
     bx = math.sqrt((hx * hx) + (hy * hy))
     bz = hz
 
-    vx = 2 * (q1*q3 - q0*q2)
-    vy = 2 * (q0*q1 + q2*q3)
-    vz = q0*q0 - q1*q1 - q2*q2 + q3*q3
+    vx = 2 * (q1 * q3 - q0 * q2)
+    vy = 2 * (q0 * q1 + q2 * q3)
+    vz = q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3
 
-    wx = 2 * bx * (0.5 - q2*q2 - q3*q3) + 2 * bz * (q1*q3 - q0*q2)
-    wy = 2 * bx * (q1*q2 - q0*q3) + 2 * bz * (q0*q1 + q2*q3)
-    wz = 2 * bx * (q0*q2 + q1*q3) + 2 * bz * (0.5 - q1*q1 - q2*q2)
+    wx = 2 * bx * (0.5 - q2 * q2 - q3 * q3) + 2 * bz * (q1 * q3 - q0 * q2)
+    wy = 2 * bx * (q1 * q2 - q0 * q3) + 2 * bz * (q0 * q1 + q2 * q3)
+    wz = 2 * bx * (q0 * q2 + q1 * q3) + 2 * bz * (0.5 - q1 * q1 - q2 * q2)
 
     ex = (ay * vz - az * vy) + (my * wz - mz * wy)
     ey = (az * vx - ax * vz) + (mz * wx - mx * wz)
     ez = (ax * vy - ay * vx) + (mx * wy - my * wx)
 
-    if (ex != 0.0 and ey != 0.0 and ez != 0.0):
+    if ex != 0.0 and ey != 0.0 and ez != 0.0:
         I_ex += delta_T * ex
         I_ey += delta_T * ey
         I_ez += delta_T * ez
@@ -265,15 +280,18 @@ def IMU_AHRSupdate_withMagnetic(acc, gyro, mag):
         gz = gz + icm_kp * ez + icm_ki * I_ez
 
     halfT = 0.5 * delta_T
-    delta_2 = (2 * halfT * gx) * (2 * halfT * gx) + (2 * halfT * gy) * (2 * halfT * gy) + (2 * halfT * gz) * (
-        2 * halfT * gz)
+    delta_2 = (
+        (2 * halfT * gx) * (2 * halfT * gx)
+        + (2 * halfT * gy) * (2 * halfT * gy)
+        + (2 * halfT * gz) * (2 * halfT * gz)
+    )
 
     q0 = (1 - delta_2 / 8) * q0 + (-q1 * gx - q2 * gy - q3 * gz) * halfT
     q1 = (1 - delta_2 / 8) * q1 + (q0 * gx + q2 * gz - q3 * gy) * halfT
     q2 = (1 - delta_2 / 8) * q2 + (q0 * gy - q1 * gz + q3 * gx) * halfT
     q3 = (1 - delta_2 / 8) * q3 + (q0 * gz + q1 * gy - q2 * gx) * halfT
 
-    norm = math.sqrt(q0*q0 + q1*q1 + q2*q2 + q3*q3)
+    norm = math.sqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3)
     Q_info[0] = q0 / norm
     Q_info[1] = q1 / norm
     Q_info[2] = q2 / norm
@@ -281,8 +299,12 @@ def IMU_AHRSupdate_withMagnetic(acc, gyro, mag):
 
     # pitch = math.asin(2 * q0*q2 - 2 * q1*q3) * 180 / math.pi
     # roll = math.atan2(2 * q2*q3 + 2 * q0*q1, -2 * q1*q1 - 2 * q2*q2 + 1) * 180 / math.pi
-    yaw = math.degrees(math.atan2(2 * Q_info[1]*Q_info[2] + 2 * Q_info[0]
-                       * Q_info[3], -2 * Q_info[2] * Q_info[2] - 2 * Q_info[3]*Q_info[3] + 1))
+    yaw = math.degrees(
+        math.atan2(
+            2 * Q_info[1] * Q_info[2] + 2 * Q_info[0] * Q_info[3],
+            -2 * Q_info[2] * Q_info[2] - 2 * Q_info[3] * Q_info[3] + 1,
+        )
+    )
 
 
 def get_two_points_distance(latitude1, longitude1, latitude2, longitude2):
@@ -296,8 +318,14 @@ def get_two_points_distance(latitude1, longitude1, latitude2, longitude2):
     a = rad_latitude1 - rad_latitude2
     b = rad_longitude1 - rad_longitude2
 
-    distance = 2 * math.asin(math.sqrt(pow(math.sin(a / 2), 2) + math.cos(
-        rad_latitude1) * math.cos(rad_latitude2) * pow(math.sin(b / 2), 2)))
+    distance = 2 * math.asin(
+        math.sqrt(
+            pow(math.sin(a / 2), 2)
+            + math.cos(rad_latitude1)
+            * math.cos(rad_latitude2)
+            * pow(math.sin(b / 2), 2)
+        )
+    )
     return distance * EARTH_RADIUS
 
 
@@ -308,20 +336,23 @@ def get_two_points_azimuth(latitude1, longitude1, latitude2, longitude2):
     longitude2 = math.radians(longitude2)
 
     x = math.sin(longitude2 - longitude1) * math.cos(latitude2)
-    y = math.cos(latitude1) * math.sin(latitude2) - math.sin(latitude1) * \
-        math.cos(latitude2) * math.cos(longitude2 - longitude1)
+    y = math.cos(latitude1) * math.sin(latitude2) - math.sin(latitude1) * math.cos(
+        latitude2
+    ) * math.cos(longitude2 - longitude1)
     angle = math.degrees(math.atan2(x, y))
-    return (angle if (angle > 0) else (angle + 360))
+    return angle if (angle > 0) else (angle + 360)
+
 
 # 文件地址，经度纬度
 
 
 def save_lonlat(file, lon, lat):
-    str1 = ''
+    str1 = ""
     for i in range(len(lon)):
         str1 += str(lon[i]) + "," + str(lat[i]) + "\n"
     with open(file, "w") as f:
         f.write(str1)
+
 
 # # 例子
 # lon = [1,2,3,4,5,6,7]

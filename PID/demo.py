@@ -5,11 +5,11 @@ import serial
 path_target = "../GPS/result.txt"  # 储存标记点的文件
 if __name__ == "__main__":
 
-    global lon_target, lat_target,ser
+    global lon_target, lat_target, ser
     os.system("sudo pigpiod")
 
     GPS_imu.get_data_lonlat(path_target)
-	
+
     ser = serial.Serial(
         "/dev/ttyUSB0", 9600, timeout=0.5
     )  # ser = serial.Serial('com7',115200, timeout=0.5)

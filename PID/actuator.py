@@ -6,7 +6,7 @@ motor = pigpio.pi()  # 电机
 
 if not servo.connected and motor.connected:
     exit()
-motor.set_servo_pulsewidth(5,0)  # 恒定速度
+motor.set_servo_pulsewidth(5, 0)  # 恒定速度
 
 
 class Actuator:

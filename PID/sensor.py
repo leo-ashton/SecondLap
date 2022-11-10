@@ -22,8 +22,8 @@ class Sensor:
           获得前视距离和方位角
         4.将方位角与yaw角给到get_need_angle函数,得到当前真实偏角,完成read
         """
-        global ser	# ser = serial.Serial('com5', 9600, timeout=0.5) # ser = serial.Serial('com7',115200, timeout=0.5)
-        datahex = ser.read(33)	
+        global ser  # ser = serial.Serial('com5', 9600, timeout=0.5) # ser = serial.Serial('com7',115200, timeout=0.5)
+        datahex = ser.read(33)
         direction, yaw, lon, lat = DueData(datahex)
         latitude_now = lat
         longitude_now = lon
