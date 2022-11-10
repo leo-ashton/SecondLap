@@ -1,6 +1,7 @@
 import actuator, sensor, controller, GPS_imu
 import os
 import serial
+from global_vars import *
 
 path_target = "../GPS/result.txt"  # 储存标记点的文件
 if __name__ == "__main__":
@@ -9,10 +10,6 @@ if __name__ == "__main__":
     os.system("sudo pigpiod")
 
     GPS_imu.get_data_lonlat(path_target)
-
-    ser = serial.Serial(
-        "/dev/ttyUSB0", 9600, timeout=0.5
-    )  # ser = serial.Serial('com7',115200, timeout=0.5)
 
     fl_motor = actuator.Actuator(pin1_no=12)
     encoder = sensor.Sensor()

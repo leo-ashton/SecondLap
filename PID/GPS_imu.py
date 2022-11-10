@@ -331,6 +331,8 @@ def IMU_AHRSupdate_withMagnetic(acc, gyro, mag):
 def get_two_points_distance(latitude1, longitude1, latitude2, longitude2):
     EARTH_RADIUS = 6378137
 
+    # print(latitude1, longitude1, latitude2, longitude2)
+
     rad_latitude1 = math.radians(latitude1)
     rad_latitude2 = math.radians(latitude2)
     rad_longitude1 = math.radians(longitude1)

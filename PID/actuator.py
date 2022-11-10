@@ -25,5 +25,5 @@ class Actuator:
             value (int): 写入执行器的值,输入为角度，转换宽度
         """
         pulsewidth = value * 7.8 + 1500
-        servo.set_servo_pulsewidth(pulsewidth)
+        servo.set_servo_pulsewidth(12, pulsewidth)
         # raise NotImplementedError("完成执行器的write方法!")
