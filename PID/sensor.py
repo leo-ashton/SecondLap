@@ -36,6 +36,7 @@ class Sensor:
         # 完成 2
         yaw = anglechange(yaw_raw)
         try:
+            print(latitude_now[-1], longitude_now[-1])
             length = get_two_points_distance(
                 latitude_now[-1],
                 longitude_now[-1],

@@ -1,19 +1,50 @@
 import math
-from global_vars import *
 
-def DueData(inputdata):  # 新增的核心程序，对读取的数据进行划分，各自读到对应的数组里
-    global FrameState  # 在局部修改全局变量，要进行global的定义
+lon_target = []  # 存储经纬度的数组，在函数中调用的时候记得global
+lat_target = []
+
+
+Q_info = [1.0, 0.0, 0.0, 0.0]
+I_ex, I_ey, I_ez = (0.0, 0.0, 0.0)
+icm_kp = 50.0  # ���ٶȼƵ��������ʱ�������
+icm_ki = 0.2  # �������������ʵĻ�������
+ACCData = [0.0] * 8
+GYROData = [0.0] * 8
+AngleData = [0.0] * 8
+MAGData = [0.0] * 8
+Lonlatdata = [0.0] * 8
+FrameState = 0  # ͨ��0x�����ֵ�ж�������һ�����
+Bytenum = 0  # ��ȡ����һ�εĵڼ�λ
+CheckSum = 0  # ���У��λ
+
+
+delta_T = 0.002  # ��������
+acc = [0.0] * 3
+gyro = [0.0] * 3
+Angle = [0.0] * 3
+mag = [0.0] * 3
+eulerAngle = [0.0] * 3
+# ��ŵľ�γ���б�
+lon = []
+lat = []
+# GPS���ص�ƫ����
+yaw = 0.0
+# GPS���ص�ƫ����(�����)
+direction = 0.0
+
+
+def DueData(inputdata):  # �����ĺ��ĳ��򣬶Զ�ȡ�����ݽ��л��֣����Զ�����Ӧ��������
+    global FrameState  # �ھֲ��޸�ȫ�ֱ�����Ҫ����global�Ķ���
     global Bytenum
     global CheckSum
-    global acc, gyro, Angle, mag, lon, lat
-    for data in inputdata:  # 在输入的数据进行遍历
-        # Python2软件版本这里需要插入 data = ord(data)*****************************************************************************************************
-        if FrameState == 0:  # 当未确定状态的时候，进入以下判断
-            if data == 0x55 and Bytenum == 0:  # 0x55位于第一位时候，开始读取数据，增大bytenum
+    global acc, gyro, Angle, mag, lon, lat, direction, yaw
+    for data in inputdata:  # ����������ݽ��б���
+        if FrameState == 0:  # ��δȷ��״̬��ʱ�򣬽��������ж�
+            if data == 0x55 and Bytenum == 0:  # 0x55λ�ڵ�һλʱ�򣬿�ʼ��ȡ���ݣ�����bytenum
                 CheckSum = data
                 Bytenum = 1
                 continue
-            elif data == 0x51 and Bytenum == 1:  # 在byte不为0 且 识别到 0x51 的时候，改变frame
+            elif data == 0x51 and Bytenum == 1:  # ��byte��Ϊ0 �� ʶ�� 0x51 ��ʱ�򣬸ı�frame
                 CheckSum += data
                 FrameState = 1
                 Bytenum = 2
@@ -25,16 +56,20 @@ def DueData(inputdata):  # 新增的核心程序，对读取的数据进行划�
                 CheckSum += data
                 FrameState = 7
                 Bytenum = 2
+            elif data == 0x58 and Bytenum == 1:
+                CheckSum += data
+                FrameState = 8
+                Bytenum = 2
 
-        elif FrameState == 1:  # acc  #已确定数据代表加速度
-            if Bytenum < 10:  # 读取8个数据
-                ACCData[Bytenum - 2] = data  # 从0开始
+        elif FrameState == 1:  # acc  #��ȷ�����ݴ������ٶ�
+            if Bytenum < 10:  # ��ȡ8������
+                ACCData[Bytenum - 2] = data  # ��0��ʼ
                 CheckSum += data
                 Bytenum += 1
             else:
-                if data == (CheckSum & 0xFF):  # 假如校验位正确
+                if data == (CheckSum & 0xFF):  # ����У��λ��ȷ
                     acc = get_acc(ACCData)
-                CheckSum = 0  # 各数据归零，进行新的循环判断
+                CheckSum = 0  # �����ݹ��㣬�����µ�ѭ���ж�
                 Bytenum = 0
                 FrameState = 0
         elif FrameState == 3:  # angle
@@ -44,7 +79,8 @@ def DueData(inputdata):  # 新增的核心程序，对读取的数据进行划�
                 Bytenum += 1
             else:
                 if data == (CheckSum & 0xFF):
-                    gyro = get_angle(AngleData)
+                    Angle = get_angle(AngleData)
+                    yaw = Angle[2]
                 CheckSum = 0
                 Bytenum = 0
                 FrameState = 0
@@ -59,11 +95,21 @@ def DueData(inputdata):  # 新增的核心程序，对读取的数据进行划�
                 CheckSum = 0
                 Bytenum = 0
                 FrameState = 0
+        elif FrameState == 8:  # direction
+            if Bytenum < 10:
+                Lonlatdata[Bytenum - 2] = data
+                CheckSum += data
+                Bytenum += 1
+            else:
+                if data == (CheckSum & 0xFF):
+                    direction = get_GPS_data(Lonlatdata)
+                CheckSum = 0
+                Bytenum = 0
+                FrameState = 0
+    return direction, yaw, lon, lat
 
 
-# 加速度
-
-
+# ���ٶ�
 def get_acc(datahex):
     axl = datahex[0]
     axh = datahex[1]
@@ -71,6 +117,7 @@ def get_acc(datahex):
     ayh = datahex[3]
     azl = datahex[4]
     azh = datahex[5]
+
     k_acc = 16.0
 
     acc_x = (axh << 8 | axl) / 32768.0 * k_acc
@@ -86,9 +133,7 @@ def get_acc(datahex):
     return acc_x, acc_y, acc_z
 
 
-# 角加速度
-
-
+# �Ǽ��ٶ�
 def get_gyro(datahex):
     wxl = datahex[0]
     wxh = datahex[1]
@@ -110,9 +155,13 @@ def get_gyro(datahex):
     return gyro_x, gyro_y, gyro_z
 
 
-# 角度
+def get_GPS_data(datahex):
+    l = datahex[2]
+    h = datahex[3]
+    return ((h << 8) | l) / 100
 
 
+# �Ƕ�
 def get_angle(datahex):
     rxl = datahex[0]
     rxh = datahex[1]
@@ -122,9 +171,9 @@ def get_angle(datahex):
     rzh = datahex[5]
     k_angle = 180.0
 
-    angle_x = (rxh << 8 | rxl) / 32768.0 * k_angle
-    angle_y = (ryh << 8 | ryl) / 32768.0 * k_angle
-    angle_z = (rzh << 8 | rzl) / 32768.0 * k_angle
+    angle_x = (rxh << 8 | rxl) / 32768.0 * k_angle  # roll
+    angle_y = (ryh << 8 | ryl) / 32768.0 * k_angle  # pitch
+    angle_z = (rzh << 8 | rzl) / 32768.0 * k_angle  # yaw
     if angle_x >= k_angle:
         angle_x -= 2 * k_angle
     if angle_y >= k_angle:
@@ -135,9 +184,7 @@ def get_angle(datahex):
     return angle_x, angle_y, angle_z
 
 
-# 磁力计
-
-
+# ������
 def get_mag(datahex):
     hxl = datahex[0]
     hxh = datahex[1]
@@ -158,9 +205,7 @@ def get_mag(datahex):
     return mag_x, mag_y, mag_z
 
 
-# 经纬度
-
-
+# ��γ��
 def get_lonlat(datahex):
     global lat, lon
     Lon0 = datahex[0]
@@ -173,8 +218,8 @@ def get_lonlat(datahex):
     Lat3 = datahex[7]
     lon_t = (Lon3 << 24) | (Lon2 << 16) | (Lon1 << 8) | Lon0
     lat_t = (Lat3 << 24) | (Lat2 << 16) | (Lat1 << 8) | Lat0
-    lat.append(lat_t / 10000000)
-    lon.append(lon_t / 10000000)
+    lat.append( lat_t%1000000+(lat_t%1000000)/10000/60)
+    lon.append( lon_t%1000000+(lon_t%1000000)/10000/60)
 
 
 def get_q(datahex):
@@ -286,6 +331,8 @@ def IMU_AHRSupdate_withMagnetic(acc, gyro, mag):
 def get_two_points_distance(latitude1, longitude1, latitude2, longitude2):
     EARTH_RADIUS = 6378137
 
+    print(latitude1, longitude1, latitude2, longitude2)
+
     rad_latitude1 = math.radians(latitude1)
     rad_latitude2 = math.radians(latitude2)
     rad_longitude1 = math.radians(longitude1)
@@ -305,6 +352,7 @@ def get_two_points_distance(latitude1, longitude1, latitude2, longitude2):
     return distance * EARTH_RADIUS
 
 
+# 前面是当前值，后面是目标点
 def get_two_points_azimuth(latitude1, longitude1, latitude2, longitude2):
     latitude1 = math.radians(latitude1)
     latitude2 = math.radians(latitude2)
@@ -319,9 +367,7 @@ def get_two_points_azimuth(latitude1, longitude1, latitude2, longitude2):
     return angle if (angle > 0) else (angle + 360)
 
 
-# 文件地址，经度纬度
-
-
+# �ļ���ַ������γ��
 def save_lonlat(file, lon, lat):
     str1 = ""
     for i in range(len(lon)):
@@ -330,7 +376,36 @@ def save_lonlat(file, lon, lat):
         f.write(str1)
 
 
-# # 例子
-# lon = [1,2,3,4,5,6,7]
-# lat = [1,2,3,4,5,6,7]
-# save_lonlat("1.txt",lon,lat)
+# 从文件中读到经纬度，path为文件路径，lon_target lat_target为全局变量
+def get_data_lonlat(path):
+    global lon_target, lat_target
+    with open(path, "r") as f:
+        print(f)
+        for line in f.readlines():
+            line = line.rstrip("\n")
+            data = line.split(",")
+            lon_target.append(float(data[0]))
+            lat_target.append(float(data[1]))
+
+
+def anglechange(input):
+    if input < 0:
+        return -input
+    else:
+        return 360 - input
+
+
+# 输入计算得到的方位角（GPS通过get_two_points_azimuth计算而来），偏航角（读取IMU实时的偏航角）
+# 输出为实际航向偏差角
+# 初始为逆时针为正
+def get_need_angle(azimuth, yaw):
+    if yaw >= 0 and yaw <= 180:
+        if azimuth - yaw <= 180:
+            return yaw - azimuth
+        else:
+            return 360 - azimuth + yaw
+    else:
+        if yaw - azimuth <= 180:
+            return yaw - azimuth
+        else:
+            return -(360 - yaw + azimuth)

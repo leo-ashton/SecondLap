@@ -218,8 +218,8 @@ def get_lonlat(datahex):
     Lat3 = datahex[7]
     lon_t = (Lon3 << 24) | (Lon2 << 16) | (Lon1 << 8) | Lon0
     lat_t = (Lat3 << 24) | (Lat2 << 16) | (Lat1 << 8) | Lat0
-    lat.append(lat_t / 10000000)
-    lon.append(lon_t / 10000000)
+    lat.append( lat_t%1000000+(lat_t%1000000)/10000/60)
+    lon.append( lon_t%1000000+(lon_t%1000000)/10000/60)
 
 
 def get_q(datahex):
@@ -331,7 +331,7 @@ def IMU_AHRSupdate_withMagnetic(acc, gyro, mag):
 def get_two_points_distance(latitude1, longitude1, latitude2, longitude2):
     EARTH_RADIUS = 6378137
 
-    # print(latitude1, longitude1, latitude2, longitude2)
+    print(latitude1, longitude1, latitude2, longitude2)
 
     rad_latitude1 = math.radians(latitude1)
     rad_latitude2 = math.radians(latitude2)
